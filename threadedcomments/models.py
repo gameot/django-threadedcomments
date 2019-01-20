@@ -42,8 +42,11 @@ class ThreadedComment(Comment):
 
             self.parent.last_child = self
             ThreadedComment.objects.filter(pk=self.parent_id).update(last_child=self.id)
-            ThreadedComment.objects.filter(pk=self.parent_id).update(newest_activity=self.submit_date)
-            ThreadedComment.objects.filter(parent_id=self.parent_id).update(newest_activity=self.submit_date)
+            root_path = self.parent.tree_path.split(PATH_SEPARATOR)
+            if root_path:
+                ThreadedComment.objects.filter(tree_path__startswith=root_path[0]).update(newest_activity=self.submit_date)
+        else:
+            ThreadedComment.objects.filter(tree_path__startswith=tree_path).update(newest_activity=self.submit_date)
 
         self.tree_path = tree_path
         ThreadedComment.objects.filter(pk=self.pk).update(tree_path=self.tree_path)
@@ -61,8 +64,9 @@ class ThreadedComment(Comment):
                 prev_child = None
             if prev_child:
                 ThreadedComment.objects.filter(pk=self.parent_id).update(last_child=prev_child)
-                ThreadedComment.objects.filter(pk=self.parent_id).update(newest_activity=prev_child.submit_date)
-                ThreadedComment.objects.filter(parent_id=self.parent_id).update(newest_activity=prev_child.submit_date)
+                root_path = self.parent.tree_path.split(PATH_SEPARATOR)
+                if root_path:
+                    ThreadedComment.objects.filter(tree_path__startswith=root_path[0]).update(newest_activity=prev_child.submit_date)
             else:
                 ThreadedComment.objects.filter(pk=self.parent_id).update(last_child=None)
                 ThreadedComment.objects.filter(pk=self.parent_id).update(newest_activity=self.parent.submit_date)
